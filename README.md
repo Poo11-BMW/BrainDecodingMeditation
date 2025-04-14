@@ -6,7 +6,7 @@ This project explores how machine learning can be used to decode and classify di
 
 ## 📦 Dataset
 
-The dataset consists of EEG recordings from **40 subjects**, each performing four distinct tasks:
+The dataset consists of EEG recordings (real-time data) from **40 subjects**, each performing four distinct tasks:
 
 - 🧘‍♂️ `med1breath` – Breath-focused meditation  
 - 🧘 `med2` – Passive meditation  
