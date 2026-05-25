@@ -1,6 +1,6 @@
 .venv/
 brain/
-figures/
+# figures/ — tracked so README images work
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
