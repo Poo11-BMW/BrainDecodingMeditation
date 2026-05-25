@@ -53,6 +53,10 @@ No deep learning needed. A well-tuned XGBoost model on the right features beats 
 
 ## What We Found
 
+---
+
+## Results in Charts
+
 ### 1. Meditation genuinely changes your brain in a measurable way
 
 When you meditate, your brain physically looks different from when you're thinking. The biggest signals:
@@ -61,6 +65,8 @@ When you meditate, your brain physically looks different from when you're thinki
 - The **left and right sides of your frontal lobe become more unequal in activity** (called Frontal Alpha Asymmetry). This is 129% more pronounced during meditation — a huge difference.
 - Your brain signal becomes **more organised and less chaotic** during meditation. It gets quieter.
 - **Theta waves at the front of your brain increase** — this is a well-known marker of focused, inward attention.
+
+![Brain Signatures](figures/proof1_brain_signatures.png)
 
 ---
 
@@ -78,6 +84,8 @@ This was the most surprising finding.
 Someone with 3 years of experience gave a perfect signal. Someone with 50 years gave the worst signal in the dataset.
 
 **Why?** Experienced meditators tend to do their own thing — they mix techniques, they wander, they adapt. Beginners follow the instructions closely, so their brain does the same thing every time. Consistency matters more than experience when it comes to how detectable your meditation is.
+
+![Experience vs Accuracy](figures/proof2_experience_vs_accuracy.png)
 
 ---
 
@@ -97,6 +105,8 @@ The answer is about **100 seconds**.
 
 After 2 minutes, the model has learned enough about that specific person's brain to be genuinely useful. It doesn't get much better after that.
 
+![Calibration Time](figures/proof3_calibration_time.png)
+
 ---
 
 ### 4. Two brain signals tell most of the story
@@ -110,6 +120,8 @@ After those two, gamma wave power (high-frequency brain activity) across multipl
 
 These results match exactly what neuroscience already knows about meditation — so we're not just finding a statistical trick, we're picking up the real biological signal.
 
+![Feature Importance](figures/proof4_feature_importance.png)
+
 ---
 
 ### 5. The model score works as a live meditation quality meter
@@ -122,6 +134,8 @@ For the best subject in our dataset:
 - During cognitive tasks: score = **0.00** — unmistakably thinking
 
 This means you could use this as a **real-time feedback dial** during meditation. Not "are you meditating?" but "how deeply are you meditating right now?" — shown as a continuous number or a gauge on screen.
+
+![Meditation Quality Score](figures/proof5_meditation_quality_score.png)
 
 ---
 
