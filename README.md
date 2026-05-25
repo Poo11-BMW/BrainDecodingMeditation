@@ -1,4 +1,4 @@
-# 🧠 Can a Computer Tell If You're Meditating?
+# 🧠 Can a Computer Tell If You're Meditating or thinking ?
 
 Yes — with 93% accuracy. Here's how we did it and what we found.
 
