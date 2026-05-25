@@ -1,0 +1,28 @@
+# ─── Core scientific stack ────────────────────────────────────────────────
+numpy
+pandas
+scipy
+matplotlib
+seaborn
+
+# ─── EEG processing ───────────────────────────────────────────────────────
+mne
+
+# ─── Machine learning ─────────────────────────────────────────────────────
+scikit-learn
+xgboost
+lightgbm
+joblib
+
+# ─── Deep learning ────────────────────────────────────────────────────────
+torch
+torchvision
+
+# ─── Explainability ───────────────────────────────────────────────────────
+shap
+
+# ─── Statistical testing ─────────────────────────────────────────────────
+statsmodels
+
+# ─── Dataset download ─────────────────────────────────────────────────────
+openneuro-py
