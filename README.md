@@ -2,6 +2,8 @@
 
 Yes — with 93% accuracy. Here's how we did it and what we found.
 
+<img width="1491" height="1055" alt="image" src="https://github.com/user-attachments/assets/1eeee279-075e-4fa7-805f-78630d39fe2b" />
+
 ---
 
 ## What This Project Does
