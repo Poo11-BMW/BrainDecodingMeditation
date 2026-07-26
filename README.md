@@ -11,6 +11,8 @@ A machine learning pipeline that classifies EEG brain recordings as meditation o
 >
 > All preprocessing fitted on training partitions only. Chronological 70/10/20 splits, non-overlapping epochs. See [docs/evaluation_audit.md](docs/evaluation_audit.md) for the full leakage audit.
 
+<img width="1491" height="1055" alt="image" src="https://github.com/user-attachments/assets/1eeee279-075e-4fa7-805f-78630d39fe2b" />
+
 ---
 
 ## What This Project Does
