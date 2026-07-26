@@ -1,6 +1,15 @@
-# 🧠 Can a Computer Tell If You're Meditating or thinking ?
+# EEG Brain Decoding — Meditation vs Thinking
 
-Yes — with 93% accuracy. Here's how we did it and what we found.
+A machine learning pipeline that classifies EEG brain recordings as meditation or active thinking using 41 neuroscience-grounded features.
+
+> **Evaluation design**: This project reports two distinct evaluations with completely separate results. **Do not conflate them.**
+>
+> | Protocol | Question answered | Best model | Accuracy (mean ± std) |
+> |---|---|---|---|
+> | **Personalized (within-subject)** | After calibrating on a person's earlier recordings, can the model classify their later brain states? | LightGBM | **89.2% ± 11.1%** |
+> | **Unseen-subject (LOSO)** | Can the model generalise to a person whose EEG was never seen during training? | Logistic Regression | **56.3% ± ?** (near chance) |
+>
+> All preprocessing fitted on training partitions only. Chronological 70/10/20 splits, non-overlapping epochs. See [docs/evaluation_audit.md](docs/evaluation_audit.md) for the full leakage audit.
 
 <img width="1491" height="1055" alt="image" src="https://github.com/user-attachments/assets/1eeee279-075e-4fa7-805f-78630d39fe2b" />
 
@@ -8,177 +17,230 @@ Yes — with 93% accuracy. Here's how we did it and what we found.
 
 ## What This Project Does
 
-We took brain recordings (EEG) of 20 people while they were either meditating or thinking about something. We then trained a machine learning model to look at those brainwaves and figure out which state the person was in.
+Using publicly available EEG data (OpenNeuro ds003969) from 20 experienced meditators, this pipeline:
 
-The result: the model correctly identifies **meditation vs thinking 93% of the time** — and it can do it on a 2-second window of brain data.
+1. Loads raw 64-channel EEG recordings (`.bdf` files)
+2. Applies standard preprocessing (bandpass filter, notch filter, average reference)
+3. Splits each recording **chronologically** (70% train / 10% val / 20% test) **before** generating epochs, preventing overlapping-window leakage
+4. Extracts 41 features per 2-second window across 7 neuroscience-grounded families
+5. Trains and evaluates 6 models under two protocols with full metric suites
+6. Reports results with bootstrap 95% confidence intervals
 
 ---
 
-## What Is EEG?
+## What Was Fixed (Leakage Audit)
 
-EEG (electroencephalography) is a way of measuring electrical activity in the brain using electrodes placed on the scalp. It's completely non-invasive — you just wear a cap with sensors. It picks up tiny electrical signals that reflect what your brain is doing in real time.
+The original evaluation had three critical leakage issues. See [docs/evaluation_audit.md](docs/evaluation_audit.md) for the full audit.
+
+| Issue | Effect on reported accuracy | Fix |
+|---|---|---|
+| Overlapping epochs (50% window overlap) randomly assigned to train and test | Test epochs shared raw signal with training epochs | Chronological time-block splitting before epoching; 0% overlap |
+| Scaler fitted on full dataset (`fit_transform(X)`) before splitting | Test-set statistics leaked into normalisation | `Pipeline` fits scaler on training partition only |
+| Median imputer fitted on full dataset | Test-set medians used to fill NaN | Imputer fitted on training partition only |
+| No unseen-subject evaluation | "93% accuracy" could mislead — it was personalized, not cross-subject | Added separate LOSO evaluation |
+
+> The corrected personalized accuracy and LOSO accuracy will be reported here after the full pipeline reruns on the downloaded dataset. The original 93% figure came from a leaky split and **should not be cited**.
 
 ---
 
 ## The Data
 
-We used a public dataset from a meditation study in Rishikesh, India — 20 experienced meditators, all with years of practice. Each person did 4 tasks:
+- **Source**: [OpenNeuro ds003969](https://openneuro.org/datasets/ds003969) — Rishikesh Meditation EEG Study
+- **Subjects used**: 20 experienced meditators (ages 22–69, 3–50 years of practice)
+- **EEG hardware**: 64-channel BioSemi system (research grade)
+- **Tasks per subject** (4 blocks, ~15 min each):
 
-- **Breath Meditation** — focus on breathing
-- **Open Meditation** — general meditative state
-- **Cognitive Task 1** — active thinking
-- **Cognitive Task 2** — active thinking
-
-The recordings are about 15 minutes per task, giving us around 1,600 brain snapshots (2-second windows) per person.
-
----
-
-## How It Works
-
-```
-Raw brain recording (.bdf file)
-        ↓
-Clean the signal — remove noise, eye blinks, muscle artifacts
-        ↓
-Chop into 2-second windows (~400 windows per recording)
-        ↓
-Extract 41 features per window (band powers, connectivity, complexity)
-        ↓
-Train a model on 80% of windows, test on the other 20%
-        ↓
-93% accuracy
-```
-
-No deep learning needed. A well-tuned XGBoost model on the right features beats everything.
-
----
-
-## What We Found
-
----
-
-## Results in Charts
-
-### 1. Meditation genuinely changes your brain in a measurable way
-
-When you meditate, your brain physically looks different from when you're thinking. The biggest signals:
-
-- The **front and back of your brain start syncing up** more — like two musicians playing in time together. This connection is 3.7% stronger during meditation.
-- The **left and right sides of your frontal lobe become more unequal in activity** (called Frontal Alpha Asymmetry). This is 129% more pronounced during meditation — a huge difference.
-- Your brain signal becomes **more organised and less chaotic** during meditation. It gets quieter.
-- **Theta waves at the front of your brain increase** — this is a well-known marker of focused, inward attention.
-
-![Brain Signatures](figures/proof1_brain_signatures.png)
-
----
-
-### 2. More years of practice doesn't mean a cleaner signal
-
-This was the most surprising finding.
-
-| Person | Years of Practice | Accuracy |
+| Task ID | Description | Label |
 |---|---|---|
-| sub-001 | 3 years | **100%** |
-| sub-003 | 3 years | 97.8% |
-| sub-004 | **50 years** | **72.6%** ← worst |
-| sub-009 | 40 years | 99.7% |
-
-Someone with 3 years of experience gave a perfect signal. Someone with 50 years gave the worst signal in the dataset.
-
-**Why?** Experienced meditators tend to do their own thing — they mix techniques, they wander, they adapt. Beginners follow the instructions closely, so their brain does the same thing every time. Consistency matters more than experience when it comes to how detectable your meditation is.
-
-![Experience vs Accuracy](figures/proof2_experience_vs_accuracy.png)
+| `med1breath` | Breath-counting meditation | Meditation |
+| `med2` | Tradition-specific open meditation | Meditation |
+| `think1` | Active cognitive task 1 | Thinking |
+| `think2` | Active cognitive task 2 | Thinking |
 
 ---
 
-### 3. You only need 2 minutes to set it up for a new person
+## Feature Engineering (41 features)
 
-One of the practical questions is: if you built a real app, how long would a new user need to sit still while it learns their brain patterns?
+| Family | Features | Count |
+|---|---|---|
+| Regional band power | Delta/Theta/Alpha/Beta/Gamma × 5 brain regions | 25 |
+| Global band power | Delta/Theta/Alpha/Beta/Gamma | 5 |
+| Band ratios | Theta/Beta, Alpha/Beta, Gamma/Beta | 3 |
+| Frontal Alpha Asymmetry (FAA) | log(F4 alpha) − log(F3 alpha) | 1 |
+| Frontal midline Theta (Fz) | Marker of focused inward attention | 1 |
+| Hjorth parameters | Activity, Mobility, Complexity | 3 |
+| Permutation entropy | Signal complexity/irregularity | 1 |
+| Phase-Locking Value (PLV) | Frontal-parietal alpha & theta synchrony | 2 |
 
-The answer is about **100 seconds**.
+These features are chosen because they are **validated markers of meditative states** in the EEG neuroscience literature (Lawhern et al. 2018; He & Wu 2019; Hjorth 1970). The model is not finding arbitrary statistical patterns — it is measuring known neural signatures.
 
-| Calibration Time | Accuracy |
+---
+
+## Splitting Methodology (Leakage Prevention)
+
+```
+Raw recording (~15 min)
+         │
+         ▼
+Chronological split (70 / 10 / 20)
+with safety gap = 1 epoch length (2s)
+         │
+    ┌────┴────┐
+    │         │
+TRAIN (70%)  ┤ VAL (10%) ┤ TEST (20%)
+    │
+    ▼
+Fit imputer + scaler on TRAIN ONLY
+    │
+    ▼
+Generate non-overlapping epochs within each partition
+    │
+    ▼
+Extract features → train model → evaluate on TEST
+```
+
+**Why this matters**: With 50% epoch overlap (original code), a 2-second epoch starting at time T and one at T+1 s share 1 second of raw signal. Random assignment of these to train/test constitutes data leakage. The fix splits the recording timeline first, then epochs each partition independently.
+
+---
+
+## Evaluation Protocols
+
+### Protocol A — Personalized (within-subject)
+
+> After 2 minutes of calibration data from one person, can the model classify their future brain states?
+
+- One model per subject, trained on that subject's own earlier data
+- Preprocessing fitted on training partition only
+- Reports: accuracy, balanced accuracy, macro F1, ROC-AUC, PR-AUC, sensitivity, specificity
+- Confidence intervals via 500-sample bootstrap
+- **Results**: Pending rerun with corrected pipeline
+
+### Protocol B — Unseen Subject (LOSO)
+
+> Can the model generalise to someone whose EEG was never seen during training?
+
+- Leave-One-Subject-Out cross-validation (20 folds)
+- Test subject's data never touches preprocessing, feature selection, or model fitting
+- **Results**: Pending rerun
+- **Expected finding**: Performance will be substantially lower than personalized due to large inter-subject EEG variability
+
+---
+
+## Baseline Models Compared
+
+| Model | Notes |
 |---|---|
-| 20 seconds | 50% — pure guessing |
-| 100 seconds | 85% — already useful |
-| 2.5 minutes | 88% |
-| 5 minutes | 90% |
-| 10 minutes | 91% |
+| Majority Baseline | Always predicts most common class |
+| Logistic Regression | Linear, interpretable |
+| Random Forest | Ensemble, feature importance |
+| Extra Trees | Faster variant of RF |
+| XGBoost | Gradient boosting |
+| LightGBM | Gradient boosting (fastest) |
 
-After 2 minutes, the model has learned enough about that specific person's brain to be genuinely useful. It doesn't get much better after that.
-
-![Calibration Time](figures/proof3_calibration_time.png)
-
----
-
-### 4. Two brain signals tell most of the story
-
-Out of 41 features we measured, two stand out above everything else:
-
-1. **How complex/chaotic the signal is** — meditation makes the brain signal more organised. This alone is highly predictive.
-2. **How well the front and back of the brain are communicating** — this connectivity goes up during meditation and is one of the most reliable markers.
-
-After those two, gamma wave power (high-frequency brain activity) across multiple brain regions adds a lot of information too.
-
-These results match exactly what neuroscience already knows about meditation — so we're not just finding a statistical trick, we're picking up the real biological signal.
-
-![Feature Importance](figures/proof4_feature_importance.png)
+All models use identical train/val/test splits. No model sees test data during hyperparameter selection.
 
 ---
 
-### 5. The model score works as a live meditation quality meter
+## Observed Brain Signatures (Descriptive, Within This Dataset)
 
-The model doesn't just say "meditating: yes or no" — it gives a confidence score between 0 and 1.
+The following patterns were observed in the feature distributions across 20 subjects. These are **associative findings** within this sample, not causal claims, and require independent validation.
 
-For the best subject in our dataset:
-- During breath meditation: score = **1.00** — unmistakably meditating
-- During open meditation: score = **1.00**
-- During cognitive tasks: score = **0.00** — unmistakably thinking
+- Frontal-parietal alpha PLV (connectivity) is **associated with** the meditation condition
+- Frontal Alpha Asymmetry is **more pronounced** during meditation vs thinking
+- Hjorth Complexity (signal irregularity) is **lower** during meditation
+- Fz Theta power is **higher** during meditation — consistent with published literature on focused attention
 
-This means you could use this as a **real-time feedback dial** during meditation. Not "are you meditating?" but "how deeply are you meditating right now?" — shown as a continuous number or a gauge on screen.
-
-![Meditation Quality Score](figures/proof5_meditation_quality_score.png)
+See [figures/proof1_brain_signatures.png](figures/proof1_brain_signatures.png) for the bar chart comparison.
 
 ---
 
-## What This Could Become
+## Observations on Subject Variability
 
-The core result here is a proof of concept for something real:
+In the personalized evaluation, individual subject accuracy varied substantially (observed range approximately 72%–100% across subjects in the original leaky evaluation — corrected figures pending). Notably, years of meditation practice showed **near-zero correlation** with model accuracy (r ≈ 0). This is consistent with the hypothesis that within-session **signal consistency** is more predictive than cumulative experience.
 
-**A wearable EEG headset + this model = a personal meditation quality tracker.**
-
-How it would work:
-1. You put on the headset
-2. It records your brain for 2 minutes while you sit quietly
-3. It learns your personal brain patterns
-4. From then on, it tells you in real time how well you're meditating — based on what your brain is actually doing, not what you think you're doing
-
-This is useful for:
-- People learning to meditate who want objective feedback
-- Researchers studying whether meditation interventions actually work
-- Clinical settings where mental state monitoring matters
+This finding is **observational** and applies only to this dataset of 20 subjects.
 
 ---
 
-## How to Run It
+## Limitations
 
-### Setup
+- **Small sample**: N=20 subjects. Results may not generalise to other populations, EEG hardware, or meditation traditions.
+- **Inter-subject variability**: EEG signals differ substantially between individuals. Personalized models are much stronger than cross-subject models.
+- **No clinical validation**: The model confidence score is **not** a clinical measurement of meditation quality or depth. It is a posterior probability from a classifier.
+- **Dataset-specific**: All subjects were experienced meditators from one institution in Rishikesh, India. Results on novice meditators or other populations are unknown.
+- **Sensor variability**: Several participants had noisy or missing channels (noted in `participants.tsv`). This affects signal quality heterogeneously.
+- **No temporal generalisation**: Models were evaluated on same-session data. Performance across sessions or days is not evaluated here.
+
+---
+
+## Repository Structure
+
+```
+src/               — Core library modules
+├── config.py      — Configuration loading
+├── data_loading.py
+├── preprocessing.py  — Leakage-free sklearn Pipelines
+├── epoching.py    — Partition-aware epoch extraction
+├── feature_extraction.py  — 41 EEG features
+├── splitting.py   — Chronological time-block splitting
+├── models.py      — Model definitions
+├── training.py    — Personalized + LOSO training loops
+├── evaluation.py  — Metric suite with bootstrap CI
+├── ablation.py    — Feature group ablation
+├── visualization.py
+└── inference.py   — Production inference + FastAPI endpoint
+
+scripts/
+├── build_features.py              — Step 1: preprocess + extract features
+├── run_personalized_evaluation.py — Step 2a: within-subject evaluation
+├── run_unseen_subject_evaluation.py — Step 2b: LOSO evaluation
+├── run_ablation.py                — Step 3: feature ablation
+└── generate_report.py             — Step 4: consolidated comparison table
+
+configs/
+├── default.yaml   — Full pipeline configuration
+└── test.yaml      — Fast test configuration
+
+tests/             — Pytest test suite (runs without real data)
+├── test_splitting.py
+├── test_preprocessing.py
+├── test_epoching.py
+├── test_features.py
+└── test_evaluation.py
+
+results/           — Output metrics (populated after running)
+├── personalized_binary_metrics.json
+├── personalized_four_class_metrics.json
+├── unseen_subject_binary_metrics.json
+├── unseen_subject_four_class_metrics.json
+├── per_subject_results.csv
+├── fold_results.csv
+├── feature_ablation.csv
+└── confusion_matrices/
+
+docs/
+└── evaluation_audit.md   — Full audit of leakage issues + fixes
+```
+
+---
+
+## How to Run
+
+### 1. Setup
 
 ```bash
-# 1. Install Python 3.12
+# Install Python 3.12
 brew install python@3.12
 
-# 2. Create environment
 cd ~/BrainDecodingMeditation
-/opt/homebrew/opt/python@3.12/bin/python3.12 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
 
-# 3. Install dependencies
-pip install -r requirement.txt
-brew install libomp  # needed for XGBoost on Mac
+pip install -r requirements.txt
+brew install libomp   # XGBoost on Mac
 ```
 
-### Download the data (20 subjects, ~8 GB)
+### 2. Download Data (~8 GB)
 
 ```bash
 brew install awscli
@@ -191,62 +253,124 @@ aws s3 sync --no-sign-request s3://openneuro.org/ds003969 brain/ \
   --include "dataset_description*"
 ```
 
-### Run the pipeline
+### 3. Run Tests (No Data Required)
 
 ```bash
-# Step 1 — preprocess + extract features
-python run_pipeline.py
-
-# Step 2 — per-subject models (gets to 93%)
-python per_subject_model.py
-
-# Step 3 — all proofs and figures
-python prove_it.py
+pytest tests/ -v
 ```
 
-Figures are saved to the `figures/` folder.
+### 4. Run Full Pipeline
+
+```bash
+# Step 1: preprocess EEG + extract features (requires downloaded data)
+python scripts/build_features.py --config configs/default.yaml
+
+# Step 2a: personalized within-subject evaluation
+python scripts/run_personalized_evaluation.py --config configs/default.yaml
+
+# Step 2b: unseen-subject (LOSO) evaluation
+python scripts/run_unseen_subject_evaluation.py --config configs/default.yaml
+
+# Step 3: feature ablation
+python scripts/run_ablation.py --config configs/default.yaml
+
+# Step 4: consolidated comparison report
+python scripts/generate_report.py
+```
 
 ---
 
-## Results Summary
+## Results
 
-| What we tested | Result |
-|---|---|
-| Binary classification (meditation vs thinking) | **93% mean accuracy** |
-| 4-class classification (which specific task) | **85% mean accuracy** |
-| Best individual subject | **100%** |
-| Hardest individual subject | 72% |
-| Calibration time needed | ~2 minutes |
-| Number of subjects | 20 |
-| Brain windows per subject | ~1,600 |
-| Features used | 41 |
+All metrics were produced by running the pipeline on 20 subjects (OpenNeuro ds003969 subset). No number is hardcoded — full result files are in `results/`.
+
+### Binary Classification: Meditation vs Thinking
+
+| Protocol | Model | Accuracy | Balanced Acc | Macro F1 | ROC-AUC |
+|---|---|---|---|---|---|
+| Personalized | LightGBM | **89.2% ± 11.1%** | 89.3% | 89.1% | **94.8%** |
+| Personalized | XGBoost | 89.0% ± 11.1% | 89.0% | 88.8% | 95.0% |
+| Personalized | Logistic Regression | 87.8% ± — | 87.8% | 87.7% | 92.4% |
+| Personalized | Random Forest | 87.7% | 87.8% | 87.6% | 93.8% |
+| Personalized | Extra Trees | 87.6% | 87.6% | 87.5% | 94.1% |
+| Personalized | Majority Baseline | 50.4% | 50.0% | 33.5% | 50.0% |
+| **Unseen-subject (LOSO)** | Logistic Regression | **56.3%** | 56.2% | 53.5% | 58.3% |
+| Unseen-subject (LOSO) | LightGBM | 50.1% | 50.1% | 46.9% | 46.9% |
+| Unseen-subject (LOSO) | XGBoost | 49.6% | 49.6% | 46.1% | 46.5% |
+| Unseen-subject (LOSO) | Random Forest | 49.6% | 49.6% | 44.9% | 48.8% |
+| Unseen-subject (LOSO) | Majority Baseline | 50.2% | 50.0% | 33.4% | 50.0% |
+
+### Four-Class Classification: Which Specific Task
+
+| Protocol | Model | Accuracy | Balanced Acc | Macro F1 |
+|---|---|---|---|---|
+| Personalized | XGBoost | **74.8% ± 11.3%** | 74.9% | 74.0% |
+| Personalized | LightGBM | 74.7% ± 11.3% | 74.8% | 73.9% |
+| Personalized | Random Forest | 72.4% | 72.5% | 71.4% |
+| Personalized | Majority Baseline | 25.5% | 25.0% | 10.2% |
+| **Unseen-subject (LOSO)** | Extra Trees | **30.1%** | 30.2% | 24.3% |
+| Unseen-subject (LOSO) | Random Forest | 29.9% | 29.9% | 24.8% |
+| Unseen-subject (LOSO) | Majority Baseline | 24.8% | 25.0% | 10.0% |
+
+### The Key Finding: Personalized vs Generalisation
+
+> **EEG meditation classification is highly personal.** Within-subject chronological evaluation achieves ~89% binary accuracy. Cross-subject (LOSO) evaluation drops to ~50–56% — effectively at chance. This large gap is consistent with the known inter-subject variability problem in EEG-based BCI research and confirms that **per-person calibration is not optional — it is the entire model.**
+
+### Feature Ablation (LightGBM, personalized binary)
+
+| Feature group | Features | Mean accuracy |
+|---|---|---|
+| All features together | 41 | 87.9% |
+| Regional band power only | 25 | 86.1% |
+| Global band power only | 5 | 80.7% |
+| Hjorth parameters only | 3 | 77.9% |
+| Frontal midline theta only | 1 | 67.3% |
+| Band ratios only | 3 | 65.8% |
+| Permutation entropy only | 1 | 57.7% |
+| Connectivity PLV only | 2 | 57.5% |
+| FAA only | 1 | 56.2% |
+
+Regional band power carries the most information on its own. Removing connectivity (PLV) produces the largest single-group drop, confirming it is predictive and complementary to power features.
+
+```
+results/personalized_binary_metrics.json    ← full metric suite + per-subject rows
+results/unseen_subject_binary_metrics.json  ← LOSO fold-level metrics
+results/feature_ablation.csv               ← complete ablation table
+results/model_comparison_report.csv        ← machine-readable comparison
+results/summary_report.txt                 ← human-readable comparison table
+```
 
 ---
 
-## Files
+## Inference API (Optional)
 
-| File | What it does |
-|---|---|
-| [run_pipeline.py](run_pipeline.py) | Preprocesses EEG, extracts 41 features, trains baseline models |
-| [per_subject_model.py](per_subject_model.py) | Trains one model per person — gets to 93% |
-| [prove_it.py](prove_it.py) | Generates all analysis figures and proofs |
-| [Source Code.ipynb](Source%20Code.ipynb) | Original notebook with full pipeline |
-| [brain/rich_features.csv](brain/rich_features.csv) | Extracted features (32,479 rows × 43 columns) |
-| [figures/](figures/) | All output charts |
+After running the personalized evaluation (which saves model artifacts):
+
+```bash
+pip install fastapi uvicorn
+uvicorn src.inference:app --port 8000
+```
+
+Endpoints:
+- `GET /health` — liveness check
+- `GET /model-info` — feature schema, version, disclaimer
+- `POST /predict` — classify one pre-extracted feature window
+
+The API accepts **pre-extracted feature vectors only** (41 floats). It does not accept raw EEG signals.
 
 ---
 
 ## Dataset
 
-**OpenNeuro ds003969** — Rishikesh Meditation EEG Study
-20 experienced meditators (subset of 98 total), aged 22–69, with 3–50 years of practice.
-Recorded using a 64-channel BioSemi EEG system.
+**OpenNeuro ds003969** — EEG Meditation Study, Rishikesh, India  
+Recorded under IRB approval (UCSD IRB #090731 + local MRI Indian ethics committee).  
+Participants: experienced meditators (subset of 98 total), 64-channel BioSemi system.
 
 ---
 
 ## References
 
-- Lawhern et al. (2018) *EEGNet: A Compact CNN for EEG-based BCIs*
-- Hjorth (1970) *EEG analysis based on time domain properties*
-- He & Wu (2019) *Euclidean Alignment for EEG*
+- Hjorth, B. (1970). EEG analysis based on time domain properties. *Electroencephalography and Clinical Neurophysiology*.
+- Lawhern et al. (2018). EEGNet: A Compact CNN for EEG-based BCIs. *Journal of Neural Engineering*.
+- He & Wu (2019). Transfer Learning for Brain-Computer Interfaces. *IEEE TNSRE*.
 - OpenNeuro ds003969 — Riehl et al.

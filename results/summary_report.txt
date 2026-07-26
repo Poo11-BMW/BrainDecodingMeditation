@@ -1,0 +1,68 @@
+======================================================================
+EEG MEDITATION CLASSIFIER — MODEL COMPARISON REPORT
+======================================================================
+
+IMPORTANT: Two evaluation protocols are reported separately.
+  'personalized'     = same subject, chronological 70/10/20 split
+  'unseen_subject'   = Leave-One-Subject-Out (new person, not in training)
+
+These measure DIFFERENT things. Do not conflate them.
+
+──────────────────────────────────────────────────────────────────────
+Protocol : personalized
+Task     : binary
+──────────────────────────────────────────────────────────────────────
+  Model                       Acc   BalAcc       F1      AUC    TrainTime(s)
+  -----------------------------------------------------------------
+  LightGBM                  0.892    0.892    0.891    0.948            1.16
+  XGBoost                   0.890    0.890    0.888    0.950            0.31
+  Logistic Regression       0.878    0.878    0.877    0.924            0.00
+  Random Forest             0.877    0.878    0.876    0.938            0.16
+  Extra Trees               0.876    0.876    0.875    0.941            0.10
+  Majority Baseline         0.504    0.500    0.335    0.500            0.00
+
+──────────────────────────────────────────────────────────────────────
+Protocol : personalized
+Task     : four_class
+──────────────────────────────────────────────────────────────────────
+  Model                       Acc   BalAcc       F1      AUC    TrainTime(s)
+  -----------------------------------------------------------------
+  XGBoost                   0.748    0.749    0.740     N/A             1.46
+  LightGBM                  0.747    0.748    0.739     N/A             4.40
+  Random Forest             0.724    0.725    0.714     N/A             0.20
+  Extra Trees               0.717    0.718    0.703     N/A             0.11
+  Logistic Regression       0.668    0.668    0.654     N/A             0.01
+  Majority Baseline         0.255    0.250    0.102     N/A             0.00
+
+──────────────────────────────────────────────────────────────────────
+Protocol : unseen_subject_loso
+Task     : binary
+──────────────────────────────────────────────────────────────────────
+  Model                       Acc   BalAcc       F1      AUC    TrainTime(s)
+  -----------------------------------------------------------------
+  Logistic Regression       0.563    0.562    0.535    0.583            0.05
+  Majority Baseline         0.502    0.500    0.334    0.500            0.00
+  LightGBM                  0.501    0.501    0.469    0.469            2.62
+  Extra Trees               0.498    0.498    0.445    0.476            0.37
+  XGBoost                   0.496    0.496    0.461    0.465            0.74
+  Random Forest             0.496    0.496    0.449    0.488            3.49
+
+──────────────────────────────────────────────────────────────────────
+Protocol : unseen_subject_loso
+Task     : four_class
+──────────────────────────────────────────────────────────────────────
+  Model                       Acc   BalAcc       F1      AUC    TrainTime(s)
+  -----------------------------------------------------------------
+  Extra Trees               0.301    0.302    0.243     N/A             0.56
+  Random Forest             0.299    0.299    0.248     N/A             4.82
+  XGBoost                   0.289    0.290    0.243     N/A             4.89
+  Logistic Regression       0.287    0.287    0.233     N/A             0.34
+  LightGBM                  0.282    0.283    0.240     N/A            15.57
+  Majority Baseline         0.248    0.250    0.100     N/A             0.00
+
+======================================================================
+Limitations:
+  - N=20 subjects; results may not generalise to other populations.
+  - Inter-subject EEG variability is large; personalized >> unseen.
+  - No clinical validation. Confidence scores ≠ meditation depth.
+======================================================================
