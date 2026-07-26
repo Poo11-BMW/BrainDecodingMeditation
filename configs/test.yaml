@@ -1,0 +1,57 @@
+# ─────────────────────────────────────────────────────────────
+# Test configuration — fast, uses synthetic data
+# ─────────────────────────────────────────────────────────────
+
+data_dir:     brain
+results_dir:  results/test_run
+artifacts_dir: artifacts/test_run
+
+tasks:
+  - med1breath
+  - think1
+
+meditation_tasks:
+  - med1breath
+
+thinking_tasks:
+  - think1
+
+bands:
+  delta: [0.5, 4.0]
+  theta: [4.0, 8.0]
+  alpha: [8.0, 12.0]
+  beta:  [12.0, 30.0]
+  gamma: [30.0, 40.0]
+
+split:
+  train_frac:         0.70
+  val_frac:           0.10
+  test_frac:          0.20
+  safety_gap_epochs:  1
+
+epoch:
+  sfreq:          64          # lower for speed in tests
+  epoch_len:      2.0
+  epoch_overlap:  0.0
+
+model:
+  random_seed:          42
+  n_estimators:         10    # tiny for speed
+  lgbm_num_leaves:      7
+  lgbm_learning_rate:   0.1
+  xgb_max_depth:        3
+  xgb_learning_rate:    0.1
+  xgb_subsample:        0.8
+  xgb_colsample_bytree: 0.8
+  rf_max_depth:         5
+  rf_min_samples_leaf:  2
+
+low_confidence_threshold: 0.6
+api_port: 8001
+
+region_defs:
+  frontal:   [Fp1, Fp2, F3, Fz, F4]
+  central:   [C3, Cz, C4]
+  temporal:  [T7, T8]
+  parietal:  [P3, Pz, P4]
+  occipital: [O1, Oz, O2]

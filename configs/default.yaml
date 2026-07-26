@@ -1,0 +1,67 @@
+# ─────────────────────────────────────────────────────────────
+# BrainDecodingMeditation — default experiment configuration
+# ─────────────────────────────────────────────────────────────
+
+data_dir:     brain
+results_dir:  results
+artifacts_dir: artifacts
+
+tasks:
+  - med1breath
+  - med2
+  - think1
+  - think2
+
+meditation_tasks:
+  - med1breath
+  - med2
+
+thinking_tasks:
+  - think1
+  - think2
+
+# EEG frequency bands (Hz)
+bands:
+  delta: [0.5, 4.0]
+  theta: [4.0, 8.0]
+  alpha: [8.0, 12.0]
+  beta:  [12.0, 30.0]
+  gamma: [30.0, 40.0]
+
+# Temporal splitting (must sum to 1.0)
+split:
+  train_frac:         0.70
+  val_frac:           0.10
+  test_frac:          0.20
+  safety_gap_epochs:  1       # number of epoch lengths as gap at boundaries
+
+# Epoch parameters
+epoch:
+  sfreq:          128         # Hz — after resampling
+  epoch_len:      2.0         # seconds
+  epoch_overlap:  0.0         # seconds — 0 = non-overlapping (required for no leakage)
+
+# Model hyperparameters
+model:
+  random_seed:          42
+  n_estimators:         300
+  lgbm_num_leaves:      63
+  lgbm_learning_rate:   0.05
+  xgb_max_depth:        7
+  xgb_learning_rate:    0.05
+  xgb_subsample:        0.8
+  xgb_colsample_bytree: 0.8
+  rf_max_depth:         20
+  rf_min_samples_leaf:  2
+
+# Inference
+low_confidence_threshold: 0.6
+api_port: 8000
+
+# Brain region → channel mappings (must match actual BDF channel names)
+region_defs:
+  frontal:   [Fp1, Fp2, AF3, AF4, AF7, AF8, F7, F3, Fz, F4, F8]
+  central:   [FC5, FC1, FCz, FC2, FC6, C3, Cz, C4]
+  temporal:  [T7, T8, TP7, TP8]
+  parietal:  [CP5, CP1, CPz, CP2, CP6, P7, P3, Pz, P4, P8]
+  occipital: [PO7, PO3, POz, PO4, PO8, O1, Oz, O2]

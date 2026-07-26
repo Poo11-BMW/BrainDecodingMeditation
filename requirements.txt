@@ -1,0 +1,27 @@
+# ─── Core scientific stack ────────────────────────────────────────────────────
+numpy>=1.26,<3
+pandas>=2.1,<3
+scipy>=1.12,<2
+matplotlib>=3.8,<4
+
+# ─── EEG processing ───────────────────────────────────────────────────────────
+mne>=1.6,<2
+
+# ─── Machine learning ─────────────────────────────────────────────────────────
+scikit-learn>=1.4,<2
+xgboost>=2.0,<3
+lightgbm>=4.3,<5
+joblib>=1.3,<2
+
+# ─── Config ───────────────────────────────────────────────────────────────────
+pyyaml>=6.0,<7
+
+# ─── Testing ─────────────────────────────────────────────────────────────────
+pytest>=8.0,<9
+
+# ─── API (optional — only needed to run the inference server) ─────────────────
+# fastapi>=0.110
+# uvicorn>=0.29
+
+# ─── Dataset download (optional — only needed to fetch raw data) ──────────────
+# openneuro-py
